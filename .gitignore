@@ -1,1 +1,5 @@
+# Avoid the storing of the API key, this need to stay private:
 api_keys.py
+*.csv
+# To check in the future...
+*.json 
