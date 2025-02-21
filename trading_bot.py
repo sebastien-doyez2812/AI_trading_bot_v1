@@ -59,12 +59,17 @@ class MLTrader(Strategy):
         # Method define in the Strategy part but herited.
         # Call every sleeptime
         cash, last_price, quantity = self.position_sizing()
-
+        probability, sentiment = self.get_sentiments()
+                
         # Check if we have enough cash:
         if cash > last_price:
-            if self.last_trade == None:
-                news = self.get_news()
-                print(news)
+
+            # cas 1: positive sentiment :) let's buy
+            if sentiment == "positive" and probability >.99:
+                if self.last_trade == "sell":
+                    self.sell_all()
+                #news = self.get_news()
+                #print(news)
                 # Backet: if the share loss to much (>5%): sell
                 # we the share gain too muh sell
                 order = self.create_order(
@@ -79,8 +84,28 @@ class MLTrader(Strategy):
                 self.last_trade = "buy"
 
 
-start_date = datetime(2023,12,15)
-end_date= datetime(2023,12,31)
+            # Negative sentiment :(
+            if sentiment == "negative" and probability >.99:
+                if self.last_trade == "buy":
+                    self.sell_all()
+                #news = self.get_news()
+                #print(news)
+                # Backet: if the share loss to much (>5%): sell
+                # we the share gain too muh sell
+                order = self.create_order(
+                    self.symbol,
+                    quantity,
+                    "sell",
+                    type="bracket",
+                    take_profit_price = last_price*0.8,
+                    stop_loss_price = last_price* 1.05
+                )
+                self.submit_order(order)
+                self.last_trade = "sell"
+
+
+start_date = datetime(2024,10,15)
+end_date= datetime(2025,2,19)
 
 
 broker = Alpaca(ALPACA_CREDS)
