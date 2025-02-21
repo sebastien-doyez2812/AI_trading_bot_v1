@@ -4,6 +4,9 @@ from lumibot.strategies.strategy import Strategy
 from lumibot.traders import Trader
 from datetime import datetime
 from api_keys import * # To not git!
+from alpaca_trade_api import REST
+from timedelta import Timedelta
+
 
 ALPACA_CREDS = {
     "API_KEY" : API_KEY,
@@ -22,6 +25,7 @@ class MLTrader(Strategy):
         self.sleeptime = "24H"
         self.last_trade = None
         self.cash_at_risk = cash_at_risk
+        self.api = REST(key_id=API_KEY,secret_key=API_SECRET, base_url=BASE_URL)
 
     def position_sizing(self):
         cash = self.get_cash()
@@ -30,6 +34,18 @@ class MLTrader(Strategy):
         # Cash at risk of 0.5 means that for each trade we 're using 50% of remaining cash
         quantity = round(cash * self.cash_at_risk/ last_price)
         return cash, last_price, quantity
+    
+
+    def get_dates(self):
+        today = self.get_datetime()
+        three_days_prior = today - Timedelta(days = 3)
+        return today.strftime('%Y-%m-%d'), three_days_prior.strftime('%Y-%m-%d')
+    def get_news(self):
+        today, three_day_prior = self.get_dates()
+        news = self.api.get_news(symbol=self.symbol, start = three_day_prior, end = today)
+
+        news = [ev.___dict__["_raw"]["headline"]for ev in news ]
+        return news
     
     def on_trading_iteration(self):
         # Method define in the Strategy part but herited.
