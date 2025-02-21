@@ -6,7 +6,7 @@ from datetime import datetime
 from api_keys import * # To not git!
 from alpaca_trade_api import REST
 from timedelta import Timedelta
-
+from finbert_utils import estimate_sentiment
 
 ALPACA_CREDS = {
     "API_KEY" : API_KEY,
@@ -43,10 +43,18 @@ class MLTrader(Strategy):
     def get_news(self):
         today, three_day_prior = self.get_dates()
         news = self.api.get_news(symbol=self.symbol, start = three_day_prior, end = today)
-
-        news = [ev.___dict__["_raw"]["headline"]for ev in news ]
+        # Get the news:
+        news = [ev.__dict__["_raw"]["headline"]for ev in news ]
         return news
     
+    def get_sentiments(self):
+        today, three_day_prior = self.get_dates()
+        news = self.api.get_news(symbol=self.symbol, start = three_day_prior, end = today)
+        # Get the news:
+        news = [ev.__dict__["_raw"]["headline"]for ev in news ]
+        probability, sentiment = estimate_sentiment(news)
+        return probability, sentiment
+
     def on_trading_iteration(self):
         # Method define in the Strategy part but herited.
         # Call every sleeptime
@@ -55,6 +63,8 @@ class MLTrader(Strategy):
         # Check if we have enough cash:
         if cash > last_price:
             if self.last_trade == None:
+                news = self.get_news()
+                print(news)
                 # Backet: if the share loss to much (>5%): sell
                 # we the share gain too muh sell
                 order = self.create_order(
